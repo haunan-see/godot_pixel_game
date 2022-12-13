@@ -1,9 +1,5 @@
 extends KinematicBody2D
-
-
-# Declare member variables here. Examples:
-# var a = 2
-# var b = "text"
+class_name Player
 
 export(int) var JUMP_STRENGTH = -250
 export(int) var JUMP_RELEASE_STRENGTH = -70
@@ -14,6 +10,7 @@ export(int) var GRAVITY = 10
 
 var velocity = Vector2.ZERO
 
+onready var animatedSprite = $AnimatedSprite
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -27,13 +24,11 @@ func _physics_process(_delta):
 	
 	if input.x == 0:
 		apply_friction()
+		animatedSprite.animation = "Idle"
 	else:
 		apply_acceleration(input.x)
-		
-		if input.x > 0:
-			get_node("AnimatedSprite").set_flip_h(true)
-		else:
-			get_node("AnimatedSprite").set_flip_h(false)
+		animatedSprite.animation = "Run"
+		animatedSprite.flip_h = input.x > 0
 	
 #	if Input.is_key_pressed(KEY_A):
 #		get_node("AnimatedSprite").set_flip_h(false)
@@ -48,14 +43,21 @@ func _physics_process(_delta):
 		if Input.is_action_just_pressed("ui_up"):
 			velocity.y = JUMP_STRENGTH
 	else:
+		animatedSprite.animation = "Jump"
 		if Input.is_action_just_released("ui_up") and velocity.y < -80:
 			velocity.y = -80
-			
-	velocity = move_and_slide(velocity, Vector2.UP)
 	
+	var was_in_air = not is_on_floor()
+	velocity = move_and_slide(velocity, Vector2.UP)
+	var just_landed = is_on_floor() and was_in_air
+	
+	if just_landed:
+		animatedSprite.animation = "Run"
+		animatedSprite.frame = 1
 
 func apply_gravity():
 	velocity.y += 10
+	velocity.y = min(velocity.y, 250)
 	
 func apply_friction():
 	velocity.x = move_toward(velocity.x, 0, 15)
